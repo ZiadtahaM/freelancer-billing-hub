@@ -1,0 +1,781 @@
+openapi: 3.1.0
+info:
+  # Do not change the title, if the title changes, the import paths will be broken
+  title: Api
+  version: 0.1.0
+  description: MenuStack - Restaurant Ordering & POS API
+servers:
+  - url: /api
+    description: Base API path
+tags:
+  - name: health
+    description: Health operations
+  - name: menu-categories
+    description: Menu category operations
+  - name: menu-items
+    description: Menu item operations
+  - name: orders
+    description: Order operations
+  - name: dashboard
+    description: Dashboard and analytics
+
+paths:
+  /healthz:
+    get:
+      operationId: healthCheck
+      tags: [health]
+      summary: Health check
+      responses:
+        "200":
+          description: Healthy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthStatus"
+
+  /menu-categories:
+    get:
+      operationId: listMenuCategories
+      tags: [menu-categories]
+      summary: List all menu categories
+      responses:
+        "200":
+          description: List of categories
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/MenuCategory"
+    post:
+      operationId: createMenuCategory
+      tags: [menu-categories]
+      summary: Create a menu category
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateMenuCategoryBody"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MenuCategory"
+
+  /menu-categories/{id}:
+    get:
+      operationId: getMenuCategory
+      tags: [menu-categories]
+      summary: Get a menu category
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Category
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MenuCategory"
+        "404":
+          description: Not found
+    put:
+      operationId: updateMenuCategory
+      tags: [menu-categories]
+      summary: Update a menu category
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateMenuCategoryBody"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MenuCategory"
+    delete:
+      operationId: deleteMenuCategory
+      tags: [menu-categories]
+      summary: Delete a menu category
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  /menu-items:
+    get:
+      operationId: listMenuItems
+      tags: [menu-items]
+      summary: List menu items
+      parameters:
+        - name: categoryId
+          in: query
+          required: false
+          schema:
+            type: integer
+        - name: available
+          in: query
+          required: false
+          schema:
+            type: boolean
+      responses:
+        "200":
+          description: List of menu items
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/MenuItem"
+    post:
+      operationId: createMenuItem
+      tags: [menu-items]
+      summary: Create a menu item
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateMenuItemBody"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MenuItem"
+
+  /menu-items/{id}:
+    get:
+      operationId: getMenuItem
+      tags: [menu-items]
+      summary: Get a menu item
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: MenuItem
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MenuItem"
+        "404":
+          description: Not found
+    put:
+      operationId: updateMenuItem
+      tags: [menu-items]
+      summary: Update a menu item
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateMenuItemBody"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MenuItem"
+    delete:
+      operationId: deleteMenuItem
+      tags: [menu-items]
+      summary: Delete a menu item
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  /menu-items/{id}/toggle-availability:
+    patch:
+      operationId: toggleMenuItemAvailability
+      tags: [menu-items]
+      summary: Toggle availability of a menu item
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MenuItem"
+
+  /public/menu:
+    get:
+      operationId: getPublicMenu
+      tags: [menu-items]
+      summary: Get full public menu grouped by category (for customer ordering page)
+      responses:
+        "200":
+          description: Public menu
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/MenuCategoryWithItems"
+
+  /orders:
+    get:
+      operationId: listOrders
+      tags: [orders]
+      summary: List orders
+      parameters:
+        - name: status
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [new, preparing, ready, completed, cancelled]
+        - name: type
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [online, in_person]
+        - name: paymentStatus
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [unpaid, paid]
+        - name: date
+          in: query
+          required: false
+          schema:
+            type: string
+            description: ISO date string to filter by day (YYYY-MM-DD)
+      responses:
+        "200":
+          description: List of orders
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/OrderWithItems"
+    post:
+      operationId: createOrder
+      tags: [orders]
+      summary: Create an order (customer or staff)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateOrderBody"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OrderWithItems"
+
+  /orders/{id}:
+    get:
+      operationId: getOrder
+      tags: [orders]
+      summary: Get an order with its items
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Order
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OrderWithItems"
+        "404":
+          description: Not found
+
+  /orders/{id}/status:
+    patch:
+      operationId: updateOrderStatus
+      tags: [orders]
+      summary: Update order status (kitchen/cashier)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateOrderStatusBody"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OrderWithItems"
+
+  /orders/{id}/payment:
+    patch:
+      operationId: updateOrderPayment
+      tags: [orders]
+      summary: Mark order as paid
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateOrderPaymentBody"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OrderWithItems"
+
+  /dashboard/stats:
+    get:
+      operationId: getDashboardStats
+      tags: [dashboard]
+      summary: Get today's KPI stats
+      responses:
+        "200":
+          description: Dashboard stats
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DashboardStats"
+
+  /dashboard/top-items:
+    get:
+      operationId: getTopSellingItems
+      tags: [dashboard]
+      summary: Get top selling menu items
+      parameters:
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Top selling items
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/TopSellingItem"
+
+  /dashboard/revenue-by-hour:
+    get:
+      operationId: getRevenueByHour
+      tags: [dashboard]
+      summary: Revenue breakdown by hour for today
+      responses:
+        "200":
+          description: Revenue by hour
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/RevenueByHour"
+
+  /dashboard/orders-by-status:
+    get:
+      operationId: getOrdersByStatus
+      tags: [dashboard]
+      summary: Count of orders grouped by status
+      responses:
+        "200":
+          description: Orders by status
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/OrderStatusCount"
+
+components:
+  schemas:
+    HealthStatus:
+      type: object
+      properties:
+        status:
+          type: string
+        uptime:
+          type: number
+          description: Process uptime in seconds
+        database:
+          type: string
+          description: Database connection status (ok or error)
+        timestamp:
+          type: string
+          description: ISO 8601 timestamp of the health check
+      required:
+        - status
+        - uptime
+        - database
+        - timestamp
+
+    MenuCategory:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        description:
+          type: string
+          nullable: true
+        sortOrder:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - name
+        - sortOrder
+        - createdAt
+
+    CreateMenuCategoryBody:
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+          nullable: true
+        sortOrder:
+          type: integer
+      required:
+        - name
+        - sortOrder
+
+    MenuItem:
+      type: object
+      properties:
+        id:
+          type: integer
+        categoryId:
+          type: integer
+        name:
+          type: string
+        description:
+          type: string
+          nullable: true
+        price:
+          type: number
+        isAvailable:
+          type: boolean
+        imageUrl:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - categoryId
+        - name
+        - price
+        - isAvailable
+        - createdAt
+
+    CreateMenuItemBody:
+      type: object
+      properties:
+        categoryId:
+          type: integer
+        name:
+          type: string
+        description:
+          type: string
+          nullable: true
+        price:
+          type: number
+        isAvailable:
+          type: boolean
+        imageUrl:
+          type: string
+          nullable: true
+      required:
+        - categoryId
+        - name
+        - price
+        - isAvailable
+
+    MenuCategoryWithItems:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        description:
+          type: string
+          nullable: true
+        sortOrder:
+          type: integer
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/MenuItem"
+      required:
+        - id
+        - name
+        - sortOrder
+        - items
+
+    OrderItem:
+      type: object
+      properties:
+        id:
+          type: integer
+        orderId:
+          type: integer
+        menuItemId:
+          type: integer
+        menuItemName:
+          type: string
+        quantity:
+          type: integer
+        unitPrice:
+          type: number
+      required:
+        - id
+        - orderId
+        - menuItemId
+        - menuItemName
+        - quantity
+        - unitPrice
+
+    Order:
+      type: object
+      properties:
+        id:
+          type: integer
+        type:
+          type: string
+          enum: [online, in_person]
+        customerName:
+          type: string
+          nullable: true
+        tableNumber:
+          type: integer
+          nullable: true
+        status:
+          type: string
+          enum: [new, preparing, ready, completed, cancelled]
+        paymentStatus:
+          type: string
+          enum: [unpaid, paid]
+        paymentMethod:
+          type: string
+          enum: [cash, card, online]
+          nullable: true
+        total:
+          type: number
+        notes:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - type
+        - status
+        - paymentStatus
+        - total
+        - createdAt
+        - updatedAt
+
+    OrderWithItems:
+      allOf:
+        - $ref: "#/components/schemas/Order"
+        - type: object
+          properties:
+            items:
+              type: array
+              items:
+                $ref: "#/components/schemas/OrderItem"
+          required:
+            - items
+
+    CreateOrderBody:
+      type: object
+      properties:
+        type:
+          type: string
+          enum: [online, in_person]
+        customerName:
+          type: string
+          nullable: true
+        tableNumber:
+          type: integer
+          nullable: true
+        notes:
+          type: string
+          nullable: true
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/CreateOrderItemBody"
+      required:
+        - type
+        - items
+
+    CreateOrderItemBody:
+      type: object
+      properties:
+        menuItemId:
+          type: integer
+        quantity:
+          type: integer
+      required:
+        - menuItemId
+        - quantity
+
+    UpdateOrderStatusBody:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [new, preparing, ready, completed, cancelled]
+      required:
+        - status
+
+    UpdateOrderPaymentBody:
+      type: object
+      properties:
+        paymentMethod:
+          type: string
+          enum: [cash, card, online]
+      required:
+        - paymentMethod
+
+    DashboardStats:
+      type: object
+      properties:
+        ordersToday:
+          type: integer
+        revenueToday:
+          type: number
+        avgOrderValue:
+          type: number
+        activeOrders:
+          type: integer
+        topSellingCategory:
+          type: string
+          nullable: true
+        paidOrders:
+          type: integer
+        unpaidOrders:
+          type: integer
+      required:
+        - ordersToday
+        - revenueToday
+        - avgOrderValue
+        - activeOrders
+        - paidOrders
+        - unpaidOrders
+
+    TopSellingItem:
+      type: object
+      properties:
+        menuItemId:
+          type: integer
+        name:
+          type: string
+        totalQuantity:
+          type: integer
+        totalRevenue:
+          type: number
+      required:
+        - menuItemId
+        - name
+        - totalQuantity
+        - totalRevenue
+
+    RevenueByHour:
+      type: object
+      properties:
+        hour:
+          type: integer
+        revenue:
+          type: number
+        orderCount:
+          type: integer
+      required:
+        - hour
+        - revenue
+        - orderCount
+
+    OrderStatusCount:
+      type: object
+      properties:
+        status:
+          type: string
+        count:
+          type: integer
+      required:
+        - status
+        - count
+
